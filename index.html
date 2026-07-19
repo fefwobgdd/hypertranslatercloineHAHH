@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Send text through Google Translate multiple times." />
+    <title>Hypertranslate – Google Translate Fun</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <p class="eyebrow">Translation telephone</p>
+        <h1>Hypertranslate</h1>
+        <p>Play translation telephone using Google Translate.</p>
+      </header>
+
+      <section class="translation-grid" aria-label="Translation workspace">
+        <label class="text-panel" for="input-text">
+          <span>Input</span>
+          <textarea id="input-text" placeholder="Write or paste something to translate…"></textarea>
+        </label>
+        <label class="text-panel" for="output-text">
+          <span>Translated</span>
+          <textarea id="output-text" readonly placeholder="Your translated text will appear here."></textarea>
+        </label>
+      </section>
+
+      <section class="progress-section" aria-live="polite">
+        <div class="progress-track"><div id="progress-bar" class="progress-bar"></div></div>
+        <p id="progress-label">Translation progress: 0/0 translated</p>
+      </section>
+
+      <section class="controls">
+        <div class="action-group">
+          <button id="translate-button" class="primary" type="button">Translate!</button>
+          <button id="clear-button" type="button">Clear Input</button>
+          <div class="history-buttons" aria-label="Translation history">
+            <button id="previous-button" type="button" aria-label="Previous translation">←</button>
+            <button id="next-button" type="button" aria-label="Next translation">→</button>
+          </div>
+        </div>
+
+        <div class="transform-controls">
+          <div class="button-row">
+            <button id="transform-button" class="accent" type="button">Transform Text</button>
+            <label class="checkbox-label"><input id="transform-each" type="checkbox" /> Transform each translation</label>
+            <button id="copy-button" type="button">Copy!</button>
+          </div>
+          <label for="transform-menu">Or transform text?</label>
+          <select id="transform-menu">
+            <option>Bold Serif</option>
+            <option>Bold Sans</option>
+            <option>Italic</option>
+            <option>Small Caps</option>
+          </select>
+          <label for="transform-stop">When to stop transforming after amount of translations</label>
+          <input id="transform-stop" type="number" min="0" step="1" placeholder="All" inputmode="numeric" />
+        </div>
+      </section>
+
+      <section class="settings" aria-label="Translation settings">
+        <label>Start Language <input id="source-language" value="en" spellcheck="false" /></label>
+        <label>End Language <input id="target-language" value="en" spellcheck="false" /></label>
+        <label>Times <input id="translation-count" value="4" min="0" step="1" inputmode="numeric" /></label>
+      </section>
+
+      <aside class="info-box">Hypertranslate sends text through Google Translate multiple times.<br><br>Use ISO-639-1 language codes. Use <code>auto</code> if the source language is unknown.</aside>
+    </main>
+    <script src="transforms.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
