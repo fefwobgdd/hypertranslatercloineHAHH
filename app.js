@@ -50,39 +50,58 @@ async function translateRequest(text, source, target) {
 }
 
 async function translateWithRetry(text, source, target, changeLanguageOnFailure = false) {
-  const attemptedLanguages = new Set();
+  const attemptedLanguages = new Set([target]);
   let nextTarget = target;
   let lastError;
 
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    attemptedLanguages.add(nextTarget);
+  for (let attempt = 1; attempt <= 10; attempt += 1) {
+    console.log(`[Translation] Attempt ${attempt}/10: ${source} -> ${nextTarget}`);
 
     try {
       const translatedText = await translateRequest(text, source, nextTarget);
+
+      if (!translatedText.trim()) {
+        throw new Error("Translation returned empty text.");
+      }
+
+      console.log(`[Translation] Attempt ${attempt}/10 succeeded.`);
       return { text: translatedText, language: nextTarget };
     } catch (error) {
       lastError = error;
 
-      if (attempt === 9) break;
+      console.warn(
+        `[Translation] Attempt ${attempt}/10 failed for ${nextTarget}:`,
+        error
+      );
+
+      if (attempt === 10) {
+        break;
+      }
 
       if (changeLanguageOnFailure) {
         const availableLanguages = SUPPORTED_LANGS.filter(
-          (language) =>
+          language =>
             language !== source &&
             !attemptedLanguages.has(language)
         );
 
-        if (availableLanguages.length === 0) break;
+        if (availableLanguages.length === 0) {
+          break;
+        }
 
         nextTarget = availableLanguages[
           Math.floor(Math.random() * availableLanguages.length)
         ];
+
+        attemptedLanguages.add(nextTarget);
       }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 
   throw new Error(
-    `Translation failed after 10 attempts. Last error: ${
+    `Translation stopped after ${attemptedLanguages.size > 1 && changeLanguageOnFailure ? attemptedLanguages.size : 10} language attempt(s). Last error: ${
       lastError instanceof Error ? lastError.message : String(lastError)
     }`
   );
