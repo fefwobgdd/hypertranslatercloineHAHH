@@ -49,65 +49,6 @@ async function translateRequest(text, source, target) {
   return data[0].map((line) => line[0] || "").join("");
 }
 
-async function translateWithRetry(text, source, target, changeLanguageOnFailure = false) {
-  const attemptedLanguages = new Set([target]);
-  let nextTarget = target;
-  let lastError;
-
-  for (let attempt = 1; attempt <= 10; attempt += 1) {
-    console.log(`[Translation] Attempt ${attempt}/10: ${source} -> ${nextTarget}`);
-
-    try {
-      const translatedText = await translateRequest(text, source, nextTarget);
-
-      if (!translatedText.trim()) {
-        throw new Error("Translation returned empty text.");
-      }
-
-      console.log(`[Translation] Attempt ${attempt}/10 succeeded.`);
-      return { text: translatedText, language: nextTarget };
-    } catch (error) {
-      lastError = error;
-
-      console.warn(
-        `[Translation] Attempt ${attempt}/10 failed for ${nextTarget}:`,
-        error
-      );
-
-      if (attempt === 10) {
-        break;
-      }
-
-      if (changeLanguageOnFailure) {
-        const availableLanguages = SUPPORTED_LANGS.filter(
-          language =>
-            language !== source &&
-            !attemptedLanguages.has(language)
-        );
-
-        if (availableLanguages.length === 0) {
-          break;
-        }
-
-        nextTarget = availableLanguages[
-          Math.floor(Math.random() * availableLanguages.length)
-        ];
-
-        attemptedLanguages.add(nextTarget);
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-
-  throw new Error(
-    `Translation stopped after ${attemptedLanguages.size > 1 && changeLanguageOnFailure ? attemptedLanguages.size : 10} language attempt(s). Last error: ${
-      lastError instanceof Error ? lastError.message : String(lastError)
-    }`
-  );
-}
-
-
 async function hypertranslate(text, beginLang, endLang, count, transformFunction, transformStopAfter) {
   if (beginLang !== "auto" && !SUPPORTED_LANGS.includes(beginLang)) throw new Error(`"${beginLang}" is not a supported starting language.`);
   if (!SUPPORTED_LANGS.includes(endLang)) throw new Error(`"${endLang}" is not a supported ending language.`);
@@ -116,49 +57,19 @@ async function hypertranslate(text, beginLang, endLang, count, transformFunction
   const totalTranslations = count + 1;
   let currentText = text;
   let currentLang = beginLang;
-
   for (let index = 0; index < count; index += 1) {
-    const nextLang = SUPPORTED_LANGS.filter(
-      (language) => language !== currentLang
-    )[Math.floor(Math.random() * SUPPORTED_LANGS.filter(
-      (language) => language !== currentLang
-    ).length)];
-
-    const result = await translateWithRetry(
-      currentText,
-      currentLang,
-      nextLang,
-      true
-    );
-
-    currentText = result.text;
-    currentLang = result.language;
-
+    const nextLang = SUPPORTED_LANGS[Math.floor(Math.random() * SUPPORTED_LANGS.length)];
+    currentText = await translateRequest(currentText, currentLang, nextLang);
+    currentLang = nextLang;
     const translatedCount = index + 1;
-
-    if (transformFunction && (transformStopAfter === null || translatedCount <= transformStopAfter)) {
-      currentText = transformFunction(currentText);
-    }
-
+    if (transformFunction && (transformStopAfter === null || translatedCount <= transformStopAfter)) currentText = transformFunction(currentText);
     addOutputHistory(currentText);
     setProgress(translatedCount, totalTranslations);
   }
-
-  const finalResult = await translateWithRetry(
-    currentText,
-    currentLang,
-    endLang
-  );
-
-  currentText = finalResult.text;
-
-  if (transformFunction && (transformStopAfter === null || totalTranslations <= transformStopAfter)) {
-    currentText = transformFunction(currentText);
-  }
-
+  currentText = await translateRequest(currentText, currentLang, endLang);
+  if (transformFunction && (transformStopAfter === null || totalTranslations <= transformStopAfter)) currentText = transformFunction(currentText);
   addOutputHistory(currentText);
   setProgress(totalTranslations, totalTranslations);
-
   return currentText;
 }
 
